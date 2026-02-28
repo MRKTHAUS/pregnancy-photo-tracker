@@ -22,6 +22,7 @@ let slideshowIndex = 0;
 let slideshowPlaying = false;
 let reminderInterval = null;
 let setupActionLocked = false;
+let lastHomeSideClickAt = 0;
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MIN_PREGNANCY_WEEK = 1;
 const MAX_PREGNANCY_WEEK = 42;
@@ -858,7 +859,8 @@ function checkReminder() {
 function fireReminder(week) {
   playReminderSound();
   triggerVibration();
-  showReminderOverlay(week);
+  // Keep reminder non-blocking for hardware-only navigation on r1.
+  updateReminderBanner();
 }
 
 function playReminderSound() {
@@ -976,7 +978,15 @@ window.addEventListener('sideClick', () => {
 
   switch (currentScreen) {
     case 'home':
-      openCapture();
+      // Double-press side button quickly on Home to open Gallery.
+      // Single press keeps quick camera access.
+      if (Date.now() - lastHomeSideClickAt < 550) {
+        lastHomeSideClickAt = 0;
+        openGallery();
+      } else {
+        lastHomeSideClickAt = Date.now();
+        openCapture();
+      }
       break;
     case 'gallery':
       showScreen('home');
