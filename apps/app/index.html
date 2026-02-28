@@ -49,7 +49,10 @@
         <div id="screen-home" class="screen">
             <div class="home-header">
                 <span class="app-title">BumpSnap</span>
-                <span class="home-menu" id="btn-settings">⚙</span>
+                <div class="home-header-actions">
+                    <button id="btn-home-gallery" class="home-icon-btn" type="button">🖼</button>
+                    <button id="btn-settings" class="home-icon-btn" type="button">⚙</button>
+                </div>
             </div>
             <div class="home-week-display">
                 <div class="week-circle">
@@ -73,24 +76,26 @@
 
         <!-- Camera/Capture Screen -->
         <div id="screen-capture" class="screen">
-            <div class="capture-header">
-                <button id="btn-capture-back" class="btn-back">‹</button>
-                <span>Week <span id="capture-week">1</span> Photo</span>
-                <span></span>
+            <div class="capture-topbar">
+                <button id="btn-capture-back" class="capture-close-btn" type="button">✕</button>
+                <span class="capture-week-chip">Week <span id="capture-week">1</span></span>
             </div>
             <div class="capture-body">
                 <div class="capture-preview" id="capture-preview">
-                    <p class="capture-hint">Tap below to take your bump photo</p>
+                    <p class="capture-hint">PTT or shutter to capture</p>
                     <video id="capture-video" class="capture-video hidden" autoplay playsinline muted></video>
                     <img id="capture-img" class="capture-img hidden" />
                 </div>
                 <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden-input" />
-                <button id="btn-open-camera" class="btn-capture-action" type="button">📷 Open Camera</button>
-                <button id="btn-take-photo" class="btn-capture-action hidden" type="button">📸 Capture Frame</button>
                 <p id="capture-error" class="capture-error hidden"></p>
+                <div class="capture-toolbar">
+                    <button id="btn-capture-gallery" class="capture-gallery-btn" type="button" aria-label="Open Gallery"></button>
+                    <button id="btn-shutter" class="capture-shutter-btn" type="button" aria-label="Shutter"></button>
+                    <button id="btn-capture-retake" class="capture-retake-btn hidden" type="button">Retake</button>
+                </div>
                 <div id="capture-controls" class="capture-controls hidden">
                     <input type="text" id="photo-label" class="photo-label-input" placeholder="Add a label (optional)" maxlength="30" />
-                    <button id="btn-save-photo" class="btn-primary">✓ Save Photo</button>
+                    <button id="btn-save-photo" class="btn-primary">Save</button>
                 </div>
             </div>
         </div>
