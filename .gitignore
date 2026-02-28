@@ -1,0 +1,18 @@
+.DS_Store
+
+# local shell dotfiles included in this downloaded folder
+.bashrc
+.bash_logout
+.profile
+
+# app build outputs
+apps/app/node_modules/
+apps/app/dist/
+apps/static/
+
+# local Rabbit packaging scratch
+.rabbit/
+
+# generated QR/payload files
+metadata/rabbit-*.png
+metadata/rabbit-*.json

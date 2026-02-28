@@ -1,0 +1,844 @@
+/* BumpSnap - Pregnancy Photo Tracker for R1 (240x282px) */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 4vw;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================
+   Screen System
+   ============================================ */
+.screen {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.screen.active {
+  display: flex;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ============================================
+   Setup Screen
+   ============================================ */
+.setup-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 8vh;
+  gap: 1vh;
+}
+
+.app-icon {
+  font-size: 14vw;
+  line-height: 1;
+}
+
+.setup-header h1 {
+  font-size: 8vw;
+  color: #FE5F00;
+  font-weight: 700;
+  letter-spacing: 0.5vw;
+}
+
+.subtitle {
+  font-size: 3.5vw;
+  color: #888;
+}
+
+.setup-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6vh 6vw 0;
+  gap: 2.5vh;
+}
+
+.setup-form label {
+  font-size: 3.5vw;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.5vw;
+}
+
+.setup-form input[type="date"] {
+  width: 80vw;
+  padding: 2.5vh 4vw;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 2vw;
+  color: #fff;
+  font-size: 4.5vw;
+  text-align: center;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.setup-form input[type="date"]:focus {
+  border-color: #FE5F00;
+  outline: none;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.btn-primary {
+  width: 80vw;
+  min-height: 44px;
+  padding: 2vh 4vw;
+  background: #FE5F00;
+  color: #000;
+  border: none;
+  border-radius: 6vw;
+  font-size: 4.5vw;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+
+.btn-primary:active {
+  opacity: 0.8;
+}
+
+.btn-primary:disabled {
+  background: #333;
+  color: #666;
+}
+
+.btn-secondary {
+  width: 80vw;
+  min-height: 44px;
+  padding: 2vh 4vw;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 6vw;
+  font-size: 4vw;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-secondary:active {
+  background: #222;
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: #FE5F00;
+  font-size: 6vw;
+  padding: 0 2vw;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-small {
+  background: #FE5F00;
+  color: #000;
+  border: none;
+  border-radius: 3vw;
+  padding: 1vh 3vw;
+  font-size: 3vw;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 28px;
+}
+
+.btn-danger {
+  width: 80vw;
+  min-height: 44px;
+  padding: 2vh 4vw;
+  background: transparent;
+  color: #ff4444;
+  border: 1px solid #ff4444;
+  border-radius: 6vw;
+  font-size: 4vw;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-born {
+  width: 80vw;
+  min-height: 44px;
+  padding: 2vh 4vw;
+  background: #2a1a2e;
+  color: #e89cf0;
+  border: 1px solid #e89cf0;
+  border-radius: 6vw;
+  font-size: 4vw;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-dismiss {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 3.5vw;
+  padding: 1.5vh 4vw;
+  cursor: pointer;
+}
+
+/* ============================================
+   Home Screen
+   ============================================ */
+.home-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2vh 4vw 0;
+  height: 7vh;
+}
+
+.app-title {
+  font-size: 4.5vw;
+  font-weight: 700;
+  color: #FE5F00;
+}
+
+.home-menu {
+  font-size: 5vw;
+  color: #888;
+  cursor: pointer;
+  padding: 1vw;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-week-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3vh 0 1.5vh;
+}
+
+.week-circle {
+  width: 30vw;
+  height: 30vw;
+  border-radius: 50%;
+  border: 2px solid #FE5F00;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #1a0d00 0%, #000 70%);
+}
+
+.week-num {
+  font-size: 12vw;
+  font-weight: 800;
+  color: #FE5F00;
+  line-height: 1;
+}
+
+.week-label {
+  font-size: 3vw;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1vw;
+  margin-top: 0.5vh;
+}
+
+.home-info {
+  text-align: center;
+  padding: 0 4vw 2vh;
+}
+
+.trimester-label {
+  font-size: 4vw;
+  color: #ccc;
+  font-weight: 600;
+}
+
+.days-left {
+  font-size: 3.5vw;
+  color: #888;
+  margin-top: 0.5vh;
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5vh;
+  padding: 0 4vw;
+}
+
+.btn-capture {
+  width: 80vw;
+  min-height: 44px;
+  padding: 2vh 4vw;
+  background: #FE5F00;
+  color: #000;
+  border: none;
+  border-radius: 6vw;
+  font-size: 4.5vw;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-capture:active {
+  opacity: 0.8;
+}
+
+/* Reminder Banner */
+.reminder-banner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #3a1800, #1a0d00);
+  border-top: 1px solid #FE5F00;
+  padding: 1.5vh 3vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 3vw;
+  color: #FE5F00;
+  animation: pulse-banner 2s infinite;
+}
+
+@keyframes pulse-banner {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ============================================
+   Capture Screen
+   ============================================ */
+.capture-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5vh 2vw;
+  font-size: 4vw;
+  font-weight: 600;
+  border-bottom: 1px solid #1a1a1a;
+  min-height: 7vh;
+}
+
+.capture-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2vh 4vw;
+  gap: 2vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.capture-preview {
+  width: 75vw;
+  height: 75vw;
+  background: #111;
+  border-radius: 3vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.capture-hint {
+  font-size: 3.5vw;
+  color: #555;
+  text-align: center;
+  padding: 4vw;
+}
+
+.capture-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.capture-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hidden-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.btn-capture-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80vw;
+  min-height: 44px;
+  padding: 2vh 4vw;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 6vw;
+  font-size: 4vw;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn-capture-action:active {
+  background: #222;
+}
+
+.capture-error {
+  color: #ff8b61;
+  font-size: 3.1vw;
+  text-align: center;
+  padding: 0 6vw;
+}
+
+.capture-controls {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5vh;
+}
+
+.photo-label-input {
+  width: 80vw;
+  padding: 1.5vh 4vw;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 2vw;
+  color: #fff;
+  font-size: 3.5vw;
+  text-align: center;
+}
+
+.photo-label-input:focus {
+  border-color: #FE5F00;
+  outline: none;
+}
+
+.photo-label-input::placeholder {
+  color: #555;
+}
+
+/* ============================================
+   Gallery Screen (iPhone-style Grid)
+   ============================================ */
+.gallery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5vh 2vw;
+  font-size: 4vw;
+  font-weight: 600;
+  border-bottom: 1px solid #1a1a1a;
+  min-height: 7vh;
+  flex-shrink: 0;
+}
+
+.gallery-grid {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.5vw;
+  gap: 0.5vw;
+}
+
+.gallery-month-separator {
+  width: 100%;
+  padding: 1.5vh 2vw 0.8vh;
+  font-size: 3.2vw;
+  font-weight: 700;
+  color: #fff;
+  text-align: left;
+}
+
+.gallery-cell {
+  width: calc(33.333% - 0.5vw);
+  aspect-ratio: 1;
+  position: relative;
+  overflow: hidden;
+  background: #111;
+  cursor: pointer;
+  border-radius: 0.5vw;
+}
+
+.gallery-cell:active {
+  opacity: 0.8;
+}
+
+.gallery-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-cell-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  padding: 1vw 1.5vw;
+  font-size: 2.8vw;
+  font-weight: 700;
+  color: #fff;
+  text-align: left;
+}
+
+.gallery-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1vh;
+  color: #555;
+}
+
+.gallery-empty p {
+  font-size: 4vw;
+}
+
+.gallery-empty .subtitle {
+  font-size: 3vw;
+}
+
+/* ============================================
+   Photo Detail Screen
+   ============================================ */
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5vh 2vw;
+  font-size: 4vw;
+  font-weight: 600;
+  border-bottom: 1px solid #1a1a1a;
+  min-height: 7vh;
+  flex-shrink: 0;
+}
+
+.detail-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.detail-img {
+  width: 100vw;
+  height: 60vh;
+  object-fit: contain;
+  background: #000;
+  flex-shrink: 0;
+}
+
+.detail-info {
+  padding: 2vh 5vw;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8vh;
+}
+
+.detail-label {
+  font-size: 4.5vw;
+  font-weight: 700;
+  color: #fff;
+}
+
+.detail-date {
+  font-size: 3.5vw;
+  color: #888;
+}
+
+.detail-week-info {
+  font-size: 3vw;
+  color: #FE5F00;
+}
+
+/* ============================================
+   Slideshow Screen
+   ============================================ */
+.slideshow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5vh 2vw;
+  font-size: 4vw;
+  font-weight: 600;
+  min-height: 7vh;
+  flex-shrink: 0;
+}
+
+.slideshow-counter {
+  font-size: 3vw;
+  color: #888;
+}
+
+.slideshow-body {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #000;
+}
+
+.slideshow-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 0.3s ease;
+}
+
+.slideshow-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.85));
+  padding: 4vh 4vw 2vh;
+  text-align: center;
+}
+
+.slideshow-week {
+  font-size: 5vw;
+  font-weight: 800;
+  color: #FE5F00;
+}
+
+.slideshow-label {
+  font-size: 3.5vw;
+  color: #ccc;
+  margin-top: 0.5vh;
+}
+
+.slideshow-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.8vh;
+  background: #222;
+}
+
+.slideshow-progress-bar {
+  height: 100%;
+  background: #FE5F00;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+.slideshow-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6vw;
+  padding: 1.5vh 0;
+  flex-shrink: 0;
+  border-top: 1px solid #1a1a1a;
+}
+
+.btn-ss {
+  width: 44px;
+  height: 44px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 5vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-ss:active {
+  background: #333;
+}
+
+/* ============================================
+   Settings Screen
+   ============================================ */
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5vh 2vw;
+  font-size: 4vw;
+  font-weight: 600;
+  border-bottom: 1px solid #1a1a1a;
+  min-height: 7vh;
+  flex-shrink: 0;
+}
+
+.settings-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3vh 4vw;
+  gap: 3vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.setting-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1vh;
+}
+
+.setting-item label {
+  font-size: 3.5vw;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.3vw;
+}
+
+.setting-item input[type="date"] {
+  width: 80vw;
+  padding: 2vh 4vw;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 2vw;
+  color: #fff;
+  font-size: 4vw;
+  text-align: center;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.setting-item input[type="date"]:focus {
+  border-color: #FE5F00;
+  outline: none;
+}
+
+.setting-item.danger {
+  margin-top: 2vh;
+  padding-top: 2vh;
+  border-top: 1px solid #222;
+}
+
+/* ============================================
+   Reminder Overlay
+   ============================================ */
+.reminder-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.3s ease;
+}
+
+.reminder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2vh;
+  padding: 4vw;
+}
+
+.reminder-icon {
+  font-size: 16vw;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5vh); }
+}
+
+.reminder-title {
+  font-size: 6vw;
+  font-weight: 800;
+  color: #FE5F00;
+}
+
+.reminder-text {
+  font-size: 4vw;
+  color: #ccc;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+::-webkit-scrollbar {
+  width: 1vw;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 1vw;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #555;
+}

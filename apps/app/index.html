@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=240, height=320, user-scalable=no, initial-scale=1.0">
+    <title>BumpSnap - Pregnancy Photo Tracker</title>
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Setup Screen -->
+        <div id="screen-setup" class="screen active">
+            <div class="setup-header">
+                <div class="app-icon">📸</div>
+                <h1>BumpSnap</h1>
+                <p class="subtitle">Pregnancy Photo Tracker</p>
+            </div>
+            <div class="setup-form">
+                <label for="due-date">Expected Due Date</label>
+                <input type="date" id="due-date" />
+                <button id="btn-start" class="btn-primary" disabled>Start Journey</button>
+            </div>
+        </div>
+
+        <!-- Home Screen -->
+        <div id="screen-home" class="screen">
+            <div class="home-header">
+                <span class="app-title">BumpSnap</span>
+                <span class="home-menu" id="btn-settings">⚙</span>
+            </div>
+            <div class="home-week-display">
+                <div class="week-circle">
+                    <span id="home-week-num" class="week-num">1</span>
+                    <span class="week-label">WEEK</span>
+                </div>
+            </div>
+            <div class="home-info">
+                <p id="home-trimester" class="trimester-label">1st Trimester</p>
+                <p id="home-days-left" class="days-left">280 days to go</p>
+            </div>
+            <div class="home-actions">
+                <button id="btn-capture" class="btn-capture">📷 Take Photo</button>
+                <button id="btn-gallery" class="btn-secondary">🖼 Gallery</button>
+            </div>
+            <div id="reminder-banner" class="reminder-banner hidden">
+                <span>📸 Week <span id="reminder-week"></span> photo needed!</span>
+                <button id="btn-reminder-capture" class="btn-small">Take Now</button>
+            </div>
+        </div>
+
+        <!-- Camera/Capture Screen -->
+        <div id="screen-capture" class="screen">
+            <div class="capture-header">
+                <button id="btn-capture-back" class="btn-back">‹</button>
+                <span>Week <span id="capture-week">1</span> Photo</span>
+                <span></span>
+            </div>
+            <div class="capture-body">
+                <div class="capture-preview" id="capture-preview">
+                    <p class="capture-hint">Tap below to take your bump photo</p>
+                    <video id="capture-video" class="capture-video hidden" autoplay playsinline muted></video>
+                    <img id="capture-img" class="capture-img hidden" />
+                </div>
+                <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden-input" />
+                <button id="btn-open-camera" class="btn-capture-action" type="button">📷 Open Camera</button>
+                <button id="btn-take-photo" class="btn-capture-action hidden" type="button">📸 Capture Frame</button>
+                <p id="capture-error" class="capture-error hidden"></p>
+                <div id="capture-controls" class="capture-controls hidden">
+                    <input type="text" id="photo-label" class="photo-label-input" placeholder="Add a label (optional)" maxlength="30" />
+                    <button id="btn-save-photo" class="btn-primary">✓ Save Photo</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gallery Screen -->
+        <div id="screen-gallery" class="screen">
+            <div class="gallery-header">
+                <button id="btn-gallery-back" class="btn-back">‹</button>
+                <span>Gallery</span>
+                <button id="btn-slideshow" class="btn-back">▶</button>
+            </div>
+            <div class="gallery-grid" id="gallery-grid">
+                <!-- Photos populated dynamically -->
+            </div>
+            <div id="gallery-empty" class="gallery-empty">
+                <p>No photos yet</p>
+                <p class="subtitle">Take your first bump photo!</p>
+            </div>
+        </div>
+
+        <!-- Photo Detail Screen -->
+        <div id="screen-detail" class="screen">
+            <div class="detail-header">
+                <button id="btn-detail-back" class="btn-back">‹</button>
+                <span id="detail-title">Week 1</span>
+                <button id="btn-delete-photo" class="btn-back" style="color:#ff4444;">✕</button>
+            </div>
+            <div class="detail-body">
+                <img id="detail-img" class="detail-img" />
+                <div class="detail-info">
+                    <p id="detail-label" class="detail-label"></p>
+                    <p id="detail-date" class="detail-date"></p>
+                    <p id="detail-week-info" class="detail-week-info"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slideshow Screen -->
+        <div id="screen-slideshow" class="screen">
+            <div class="slideshow-header">
+                <button id="btn-slideshow-back" class="btn-back">‹</button>
+                <span>Your Journey</span>
+                <span id="slideshow-counter" class="slideshow-counter">1/40</span>
+            </div>
+            <div class="slideshow-body">
+                <img id="slideshow-img" class="slideshow-img" />
+                <div class="slideshow-overlay">
+                    <p id="slideshow-week" class="slideshow-week">Week 1</p>
+                    <p id="slideshow-label" class="slideshow-label"></p>
+                </div>
+                <div class="slideshow-progress">
+                    <div id="slideshow-progress-bar" class="slideshow-progress-bar"></div>
+                </div>
+            </div>
+            <div class="slideshow-controls">
+                <button id="btn-ss-prev" class="btn-ss">‹</button>
+                <button id="btn-ss-play" class="btn-ss">⏸</button>
+                <button id="btn-ss-next" class="btn-ss">›</button>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="screen-settings" class="screen">
+            <div class="settings-header">
+                <button id="btn-settings-back" class="btn-back">‹</button>
+                <span>Settings</span>
+                <span></span>
+            </div>
+            <div class="settings-body">
+                <div class="setting-item">
+                    <label>Due Date</label>
+                    <input type="date" id="settings-due-date" />
+                </div>
+                <div class="setting-item">
+                    <label>Mark as Born</label>
+                    <button id="btn-baby-born" class="btn-born">🎉 Baby Born!</button>
+                </div>
+                <div class="setting-item">
+                    <button id="btn-save-settings" class="btn-primary">Save</button>
+                </div>
+                <div class="setting-item danger">
+                    <button id="btn-reset" class="btn-danger">Reset All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
