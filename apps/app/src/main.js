@@ -7,7 +7,7 @@ const STATE_KEY = 'bumpsnap_state';
 
 const defaultState = {
   dueDate: null,
-  startDate: null,
+  currentWeek: 1,
   photos: [],       // { week, date, label, imageData }
   babyBorn: false,
   bornDate: null,
@@ -21,6 +21,16 @@ let slideshowTimer = null;
 let slideshowIndex = 0;
 let slideshowPlaying = false;
 let reminderInterval = null;
+let setupActionLocked = false;
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MIN_PREGNANCY_WEEK = 1;
+const MAX_PREGNANCY_WEEK = 42;
+const setupFlow = {
+  step: 'date', // "date" -> "week"
+  part: 0, // 0=day, 1=month, 2=year
+  draftDate: null,
+  draftWeek: MIN_PREGNANCY_WEEK
+};
 
 // ============================================
 // Storage Helpers
@@ -63,33 +73,13 @@ async function loadState() {
 // Pregnancy Calculations
 // ============================================
 function getPregnancyWeek() {
-  if (!state.startDate) return 0;
-  const start = new Date(state.startDate);
-  const now = new Date();
-  const diffMs = now - start;
-  const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
-  return Math.min(Math.max(diffWeeks, 1), 42);
+  return clampWeek(state.currentWeek || MIN_PREGNANCY_WEEK);
 }
 
 function getTrimester(week) {
   if (week <= 13) return '1st Trimester';
   if (week <= 26) return '2nd Trimester';
   return '3rd Trimester';
-}
-
-function getDaysLeft() {
-  if (!state.dueDate) return 0;
-  const due = new Date(state.dueDate);
-  const now = new Date();
-  const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
-  return Math.max(diff, 0);
-}
-
-function getStartDateFromDue(dueDateStr) {
-  const due = new Date(dueDateStr);
-  const start = new Date(due);
-  start.setDate(start.getDate() - 280);
-  return start.toISOString().split('T')[0];
 }
 
 function hasPhotoForWeek(week) {
@@ -102,8 +92,178 @@ function getPhotoForWeek(week) {
 
 function formatDate(dateStr) {
   const d = new Date(dateStr);
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+function clampWeek(week) {
+  return Math.min(MAX_PREGNANCY_WEEK, Math.max(MIN_PREGNANCY_WEEK, Number(week) || MIN_PREGNANCY_WEEK));
+}
+
+function startOfDay(dateLike) {
+  const d = new Date(dateLike);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function getDaysInMonth(year, monthIndex) {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function parseISODate(dateStr) {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+
+  const candidate = startOfDay(new Date(year, month - 1, day));
+  if (
+    candidate.getFullYear() !== year ||
+    candidate.getMonth() !== month - 1 ||
+    candidate.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return candidate;
+}
+
+function toISODateString(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function buildSafeDate(year, monthIndex, day) {
+  const safeDay = Math.min(day, getDaysInMonth(year, monthIndex));
+  return startOfDay(new Date(year, monthIndex, safeDay));
+}
+
+function getDefaultDueDateDraft() {
+  const saved = parseISODate(state.dueDate);
+  if (saved) return saved;
+  const fallback = startOfDay(new Date());
+  fallback.setDate(fallback.getDate() + 1);
+  return fallback;
+}
+
+function renderSetupFlow() {
+  const dateStep = document.getElementById('setup-step-date');
+  const weekStep = document.getElementById('setup-step-week');
+  const isDateStep = setupFlow.step === 'date';
+
+  dateStep.classList.toggle('hidden', !isDateStep);
+  weekStep.classList.toggle('hidden', isDateStep);
+
+  if (setupFlow.draftDate) {
+    document.getElementById('setup-date-day').textContent = String(setupFlow.draftDate.getDate()).padStart(2, '0');
+    document.getElementById('setup-date-month').textContent = MONTH_NAMES[setupFlow.draftDate.getMonth()];
+    document.getElementById('setup-date-year').textContent = String(setupFlow.draftDate.getFullYear());
+  }
+
+  document.querySelectorAll('.date-slot[data-picker="setup"]').forEach((slot) => {
+    const active = isDateStep && Number(slot.dataset.part) === setupFlow.part;
+    slot.classList.toggle('active', active);
+  });
+
+  document.getElementById('setup-week-value').textContent = String(setupFlow.draftWeek);
+}
+
+function syncSetupFlowFromState() {
+  setupActionLocked = false;
+  setupFlow.step = 'date';
+  setupFlow.part = 0;
+  setupFlow.draftDate = getDefaultDueDateDraft();
+  setupFlow.draftWeek = clampWeek(state.currentWeek || MIN_PREGNANCY_WEEK);
+  renderSetupFlow();
+}
+
+function changeSetupDatePartValue(delta) {
+  if (currentScreen !== 'setup' || setupFlow.step !== 'date' || !setupFlow.draftDate) return false;
+
+  const current = setupFlow.draftDate;
+  let next = startOfDay(current);
+
+  if (setupFlow.part === 0) {
+    next.setDate(next.getDate() + delta);
+  } else if (setupFlow.part === 1) {
+    next = buildSafeDate(current.getFullYear(), current.getMonth() + delta, current.getDate());
+  } else {
+    next = buildSafeDate(current.getFullYear() + delta, current.getMonth(), current.getDate());
+  }
+
+  setupFlow.draftDate = startOfDay(next);
+  renderSetupFlow();
+  return true;
+}
+
+function changeSetupWeekValue(delta) {
+  if (currentScreen !== 'setup' || setupFlow.step !== 'week') return false;
+  setupFlow.draftWeek = clampWeek(setupFlow.draftWeek + delta);
+  renderSetupFlow();
+  return true;
+}
+
+async function confirmSetupFlowStep() {
+  if (currentScreen !== 'setup' || setupActionLocked) return false;
+
+  if (setupFlow.step === 'date') {
+    if (setupFlow.part < 2) {
+      setupFlow.part += 1;
+      renderSetupFlow();
+      return true;
+    }
+
+    setupActionLocked = true;
+    try {
+      state.dueDate = toISODateString(setupFlow.draftDate);
+      await saveState();
+      setupFlow.step = 'week';
+      renderSetupFlow();
+    } finally {
+      setupActionLocked = false;
+    }
+    return true;
+  }
+
+  if (setupFlow.step === 'week') {
+    setupActionLocked = true;
+    try {
+      state.currentWeek = clampWeek(setupFlow.draftWeek);
+      state.setupComplete = true;
+      await saveState();
+      showScreen('home');
+      updateHome();
+      startReminderCheck();
+    } finally {
+      setupActionLocked = false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function bindDatePickerClicks() {
+  document.querySelectorAll('.date-slot[data-picker="setup"]').forEach((slot) => {
+    slot.addEventListener('click', () => {
+      if (setupFlow.step !== 'date') return;
+      const part = Number(slot.dataset.part);
+      if (Number.isNaN(part)) return;
+      setupFlow.part = Math.max(0, Math.min(2, part));
+      renderSetupFlow();
+    });
+  });
+}
+
+function changeHomeWeek(delta) {
+  if (currentScreen !== 'home') return false;
+  const nextWeek = clampWeek((state.currentWeek || MIN_PREGNANCY_WEEK) + delta);
+  if (nextWeek !== state.currentWeek) {
+    state.currentWeek = nextWeek;
+    updateHome();
+    saveState();
+  }
+  return true;
 }
 
 // ============================================
@@ -122,32 +282,8 @@ function showScreen(screenId) {
 // Setup Screen
 // ============================================
 function initSetup() {
-  const dueDateInput = document.getElementById('due-date');
-  const btnStart = document.getElementById('btn-start');
-
-  const today = new Date();
-  const minDate = new Date(today);
-  minDate.setDate(minDate.getDate() + 1);
-  const maxDate = new Date(today);
-  maxDate.setMonth(maxDate.getMonth() + 10);
-
-  dueDateInput.min = minDate.toISOString().split('T')[0];
-  dueDateInput.max = maxDate.toISOString().split('T')[0];
-
-  dueDateInput.addEventListener('change', () => {
-    btnStart.disabled = !dueDateInput.value;
-  });
-
-  btnStart.addEventListener('click', () => {
-    if (!dueDateInput.value) return;
-    state.dueDate = dueDateInput.value;
-    state.startDate = getStartDateFromDue(dueDateInput.value);
-    state.setupComplete = true;
-    saveState();
-    showScreen('home');
-    updateHome();
-    startReminderCheck();
-  });
+  bindDatePickerClicks();
+  syncSetupFlowFromState();
 }
 
 // ============================================
@@ -155,14 +291,14 @@ function initSetup() {
 // ============================================
 function updateHome() {
   const week = getPregnancyWeek();
-  const trimester = getTrimester(week);
-  const daysLeft = getDaysLeft();
+  const dueText = state.dueDate ? formatDate(state.dueDate) : '--';
+  const bornText = state.bornDate ? formatDate(state.bornDate) : '--';
 
   document.getElementById('home-week-num').textContent = state.babyBorn ? '🎉' : week;
-  document.getElementById('home-trimester').textContent = state.babyBorn ? 'Baby is here!' : trimester;
+  document.getElementById('home-trimester').textContent = state.babyBorn ? 'Baby is here!' : `Week ${week}`;
   document.getElementById('home-days-left').textContent = state.babyBorn
-    ? `Born ${formatDate(state.bornDate)}`
-    : `${daysLeft} days to go`;
+    ? `Born ${bornText}`
+    : `Due: ${dueText}`;
 
   updateReminderBanner();
 }
@@ -329,6 +465,34 @@ function captureFrameFromVideo() {
   showCapturedImage(capturedDataUrl);
 }
 
+async function savePendingPhoto() {
+  if (!pendingImageData) return false;
+
+  const week = getPregnancyWeek();
+  const label = document.getElementById('photo-label').value.trim();
+  const existing = state.photos.findIndex(p => p.week === week);
+
+  const photoEntry = {
+    week,
+    date: new Date().toISOString(),
+    label: label || `Week ${week}`,
+    imageData: pendingImageData
+  };
+
+  if (existing >= 0) {
+    state.photos[existing] = photoEntry;
+  } else {
+    state.photos.push(photoEntry);
+    state.photos.sort((a, b) => a.week - b.week);
+  }
+
+  await saveState();
+  resetCapture();
+  showScreen('home');
+  updateHome();
+  return true;
+}
+
 function initCapture() {
   const cameraInput = document.getElementById('camera-input');
   const btnOpenCamera = document.getElementById('btn-open-camera');
@@ -358,31 +522,8 @@ function initCapture() {
     reader.readAsDataURL(file);
   });
 
-  document.getElementById('btn-save-photo').addEventListener('click', () => {
-    if (!pendingImageData) return;
-
-    const week = getPregnancyWeek();
-    const label = document.getElementById('photo-label').value.trim();
-    const existing = state.photos.findIndex(p => p.week === week);
-
-    const photoEntry = {
-      week,
-      date: new Date().toISOString(),
-      label: label || `Week ${week}`,
-      imageData: pendingImageData
-    };
-
-    if (existing >= 0) {
-      state.photos[existing] = photoEntry;
-    } else {
-      state.photos.push(photoEntry);
-      state.photos.sort((a, b) => a.week - b.week);
-    }
-
-    saveState();
-    resetCapture();
-    showScreen('home');
-    updateHome();
+  document.getElementById('btn-save-photo').addEventListener('click', async () => {
+    await savePendingPhoto();
   });
 
   document.getElementById('btn-capture-back').addEventListener('click', () => {
@@ -430,7 +571,6 @@ function updateGallery() {
   empty.classList.add('hidden');
   grid.classList.remove('hidden');
 
-  const currentWeek = getPregnancyWeek();
   let lastMonth = '';
 
   state.photos.forEach((photo, index) => {
@@ -594,9 +734,16 @@ function stopSlideshow() {
 // ============================================
 // Settings
 // ============================================
+function updateSettingsSummary() {
+  document.getElementById('settings-week-value').textContent = `Week ${getPregnancyWeek()}`;
+  document.getElementById('settings-due-date-text').textContent = state.dueDate
+    ? formatDate(state.dueDate)
+    : '--';
+}
+
 function initSettings() {
   document.getElementById('btn-settings').addEventListener('click', () => {
-    document.getElementById('settings-due-date').value = state.dueDate || '';
+    updateSettingsSummary();
     showScreen('settings');
   });
 
@@ -605,31 +752,21 @@ function initSettings() {
     updateHome();
   });
 
-  document.getElementById('btn-save-settings').addEventListener('click', () => {
-    const newDue = document.getElementById('settings-due-date').value;
-    if (newDue) {
-      state.dueDate = newDue;
-      state.startDate = getStartDateFromDue(newDue);
-      saveState();
-    }
-    showScreen('home');
-    updateHome();
-  });
-
-  document.getElementById('btn-baby-born').addEventListener('click', () => {
+  document.getElementById('btn-baby-born').addEventListener('click', async () => {
     if (confirm('Mark baby as born? This will enable the final photo.')) {
       state.babyBorn = true;
       state.bornDate = new Date().toISOString();
-      saveState();
+      await saveState();
       showScreen('home');
       updateHome();
     }
   });
 
-  document.getElementById('btn-reset').addEventListener('click', () => {
+  document.getElementById('btn-reset').addEventListener('click', async () => {
     if (confirm('Delete ALL data and photos? This cannot be undone.')) {
       state = { ...defaultState };
-      saveState();
+      await saveState();
+      syncSetupFlowFromState();
       showScreen('setup');
     }
   });
@@ -751,6 +888,10 @@ function showReminderOverlay(week) {
 // R1 Hardware Events
 // ============================================
 window.addEventListener('scrollUp', () => {
+  if (changeSetupDatePartValue(-1)) return;
+  if (changeSetupWeekValue(-1)) return;
+  if (changeHomeWeek(-1)) return;
+
   const scrollable = getActiveScrollable();
   if (scrollable) {
     scrollable.scrollBy({ top: -80, behavior: 'smooth' });
@@ -758,6 +899,10 @@ window.addEventListener('scrollUp', () => {
 });
 
 window.addEventListener('scrollDown', () => {
+  if (changeSetupDatePartValue(1)) return;
+  if (changeSetupWeekValue(1)) return;
+  if (changeHomeWeek(1)) return;
+
   const scrollable = getActiveScrollable();
   if (scrollable) {
     scrollable.scrollBy({ top: 80, behavior: 'smooth' });
@@ -772,6 +917,11 @@ function getActiveScrollable() {
 }
 
 window.addEventListener('sideClick', () => {
+  if (currentScreen === 'setup') {
+    confirmSetupFlowStep();
+    return;
+  }
+
   switch (currentScreen) {
     case 'home':
       openCapture();
@@ -783,8 +933,15 @@ window.addEventListener('sideClick', () => {
       showScreen('gallery');
       break;
     case 'capture':
-      resetCapture();
-      showScreen('home');
+      if (cameraStream) {
+        captureFrameFromVideo();
+        break;
+      }
+      if (pendingImageData) {
+        savePendingPhoto();
+        break;
+      }
+      startLiveCamera();
       break;
     case 'slideshow':
       stopSlideshow();
@@ -825,11 +982,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load saved state
   const hasState = await loadState();
+  state.currentWeek = clampWeek(state.currentWeek || MIN_PREGNANCY_WEEK);
   if (hasState && state.setupComplete) {
     showScreen('home');
     updateHome();
     startReminderCheck();
   } else {
+    syncSetupFlowFromState();
     showScreen('setup');
   }
 

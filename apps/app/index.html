@@ -11,14 +11,37 @@
         <!-- Setup Screen -->
         <div id="screen-setup" class="screen active">
             <div class="setup-header">
-                <div class="app-icon">📸</div>
+                <div class="app-icon">●</div>
                 <h1>BumpSnap</h1>
-                <p class="subtitle">Pregnancy Photo Tracker</p>
+                <p class="subtitle">Rabbit r1 camera tracker</p>
             </div>
             <div class="setup-form">
-                <label for="due-date">Expected Due Date</label>
-                <input type="date" id="due-date" />
-                <button id="btn-start" class="btn-primary" disabled>Start Journey</button>
+                <div id="setup-step-date" class="setup-step">
+                    <label>Set Due Date</label>
+                    <div id="setup-date-picker" class="date-picker">
+                        <button type="button" class="date-slot active" data-picker="setup" data-part="0">
+                            <span class="slot-label">Day</span>
+                            <span id="setup-date-day" class="slot-value">01</span>
+                        </button>
+                        <button type="button" class="date-slot" data-picker="setup" data-part="1">
+                            <span class="slot-label">Month</span>
+                            <span id="setup-date-month" class="slot-value">Jan</span>
+                        </button>
+                        <button type="button" class="date-slot" data-picker="setup" data-part="2">
+                            <span class="slot-label">Year</span>
+                            <span id="setup-date-year" class="slot-value">2026</span>
+                        </button>
+                    </div>
+                    <p class="date-picker-hint">Scroll to change value. PTT confirms Day -> Month -> Year.</p>
+                </div>
+                <div id="setup-step-week" class="setup-step hidden">
+                    <label>Set Current Week</label>
+                    <div class="week-picker">
+                        <span class="slot-label">Week</span>
+                        <span id="setup-week-value" class="week-value">1</span>
+                    </div>
+                    <p class="date-picker-hint">Scroll to set week (1-42). PTT saves setup.</p>
+                </div>
             </div>
         </div>
 
@@ -35,8 +58,8 @@
                 </div>
             </div>
             <div class="home-info">
-                <p id="home-trimester" class="trimester-label">1st Trimester</p>
-                <p id="home-days-left" class="days-left">280 days to go</p>
+                <p id="home-trimester" class="trimester-label">Week 1</p>
+                <p id="home-days-left" class="days-left">Due: --</p>
             </div>
             <div class="home-actions">
                 <button id="btn-capture" class="btn-capture">📷 Take Photo</button>
@@ -138,15 +161,17 @@
             </div>
             <div class="settings-body">
                 <div class="setting-item">
+                    <label>Current Week</label>
+                    <p id="settings-week-value" class="setting-value">Week 1</p>
+                    <p class="date-picker-hint">Change week from Home screen using the scroll wheel.</p>
+                </div>
+                <div class="setting-item">
                     <label>Due Date</label>
-                    <input type="date" id="settings-due-date" />
+                    <p id="settings-due-date-text" class="setting-value">--</p>
                 </div>
                 <div class="setting-item">
-                    <label>Mark as Born</label>
+                    <label>Mark as born</label>
                     <button id="btn-baby-born" class="btn-born">🎉 Baby Born!</button>
-                </div>
-                <div class="setting-item">
-                    <button id="btn-save-settings" class="btn-primary">Save</button>
                 </div>
                 <div class="setting-item danger">
                     <button id="btn-reset" class="btn-danger">Reset All Data</button>
