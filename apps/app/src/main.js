@@ -387,19 +387,18 @@ function showCapturedImage(imageData) {
   const captureVideo = document.getElementById('capture-video');
   const captureControls = document.getElementById('capture-controls');
   const captureHint = document.querySelector('.capture-hint');
-  const btnRetake = document.getElementById('btn-capture-retake');
 
   pendingImageData = imageData;
   captureImg.src = pendingImageData;
   captureImg.classList.remove('hidden');
   captureVideo.classList.add('hidden');
   captureControls.classList.remove('hidden');
-  btnRetake.classList.remove('hidden');
   if (captureHint) captureHint.classList.add('hidden');
 }
 
 function stopCameraStream() {
   const captureVideo = document.getElementById('capture-video');
+  const btnTakePhoto = document.getElementById('btn-take-photo');
 
   if (cameraStream) {
     cameraStream.getTracks().forEach(track => track.stop());
@@ -413,6 +412,10 @@ function stopCameraStream() {
   if (captureVideo) {
     captureVideo.classList.add('hidden');
   }
+
+  if (btnTakePhoto) {
+    btnTakePhoto.classList.add('hidden');
+  }
 }
 
 async function startLiveCamera() {
@@ -421,7 +424,7 @@ async function startLiveCamera() {
   const captureControls = document.getElementById('capture-controls');
   const cameraInput = document.getElementById('camera-input');
   const captureHint = document.querySelector('.capture-hint');
-  const btnRetake = document.getElementById('btn-capture-retake');
+  const btnTakePhoto = document.getElementById('btn-take-photo');
 
   stopCameraStream();
   pendingImageData = null;
@@ -429,7 +432,6 @@ async function startLiveCamera() {
   captureImg.classList.add('hidden');
   captureImg.src = '';
   captureControls.classList.add('hidden');
-  btnRetake.classList.add('hidden');
   if (captureHint) captureHint.classList.add('hidden');
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -475,10 +477,10 @@ async function startLiveCamera() {
   cameraStream = stream;
   captureVideo.srcObject = stream;
   captureVideo.classList.remove('hidden');
+  btnTakePhoto.classList.remove('hidden');
 
   try {
     await captureVideo.play();
-    if (captureHint) captureHint.classList.add('hidden');
   } catch (error) {
     console.warn('Video play() failed:', error);
   }
@@ -539,26 +541,18 @@ async function savePendingPhoto() {
   return true;
 }
 
-function updateCaptureGalleryButton() {
-  const btnGallery = document.getElementById('btn-capture-gallery');
-  if (!btnGallery) return;
-
-  if (state.photos.length === 0) {
-    btnGallery.style.backgroundImage = '';
-    btnGallery.textContent = '🖼';
-    return;
-  }
-
-  const lastPhoto = state.photos[state.photos.length - 1];
-  btnGallery.textContent = '';
-  btnGallery.style.backgroundImage = `url("${lastPhoto.imageData}")`;
-}
-
 function initCapture() {
   const cameraInput = document.getElementById('camera-input');
-  const btnShutter = document.getElementById('btn-shutter');
-  const btnCaptureGallery = document.getElementById('btn-capture-gallery');
-  const btnRetake = document.getElementById('btn-capture-retake');
+  const btnOpenCamera = document.getElementById('btn-open-camera');
+  const btnTakePhoto = document.getElementById('btn-take-photo');
+
+  btnOpenCamera.addEventListener('click', () => {
+    startLiveCamera();
+  });
+
+  btnTakePhoto.addEventListener('click', () => {
+    captureFrameFromVideo();
+  });
 
   cameraInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -569,7 +563,6 @@ function initCapture() {
       setCaptureError('');
       stopCameraStream();
       showCapturedImage(ev.target.result);
-      updateCaptureGalleryButton();
     };
     reader.onerror = () => {
       setCaptureError('Could not read selected image.');
@@ -577,31 +570,8 @@ function initCapture() {
     reader.readAsDataURL(file);
   });
 
-  btnShutter.addEventListener('click', async () => {
-    if (cameraStream) {
-      captureFrameFromVideo();
-      return;
-    }
-    if (pendingImageData) {
-      await savePendingPhoto();
-      updateCaptureGalleryButton();
-      return;
-    }
-    startLiveCamera();
-  });
-
-  btnCaptureGallery.addEventListener('click', () => {
-    stopCameraStream();
-    openGallery();
-  });
-
-  btnRetake.addEventListener('click', () => {
-    startLiveCamera();
-  });
-
   document.getElementById('btn-save-photo').addEventListener('click', async () => {
     await savePendingPhoto();
-    updateCaptureGalleryButton();
   });
 
   document.getElementById('btn-capture-back').addEventListener('click', () => {
@@ -614,12 +584,10 @@ function resetCapture() {
   stopCameraStream();
   pendingImageData = null;
   setCaptureError('');
-  const btnRetake = document.getElementById('btn-capture-retake');
   document.getElementById('capture-video').classList.add('hidden');
   document.getElementById('capture-img').classList.add('hidden');
   document.getElementById('capture-img').src = '';
   document.getElementById('capture-controls').classList.add('hidden');
-  btnRetake.classList.add('hidden');
   document.getElementById('photo-label').value = '';
   document.getElementById('camera-input').value = '';
   const hint = document.querySelector('.capture-hint');
@@ -629,7 +597,6 @@ function resetCapture() {
 function openCapture() {
   const week = getPregnancyWeek();
   document.getElementById('capture-week').textContent = state.babyBorn ? 'Born!' : week;
-  updateCaptureGalleryButton();
   resetCapture();
   showScreen('capture');
   startLiveCamera();
@@ -1075,7 +1042,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Navigation buttons
   document.getElementById('btn-capture').addEventListener('click', openCapture);
-  document.getElementById('btn-home-gallery').addEventListener('click', openGallery);
   document.getElementById('btn-reminder-capture').addEventListener('click', openCapture);
   document.getElementById('btn-gallery').addEventListener('click', openGallery);
 
