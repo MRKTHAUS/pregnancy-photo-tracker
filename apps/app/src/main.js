@@ -35,37 +35,84 @@ const setupFlow = {
 // ============================================
 // Storage Helpers
 // ============================================
-async function saveState() {
+function getCreationPlainStorage() {
+  if (!window.creationStorage || !window.creationStorage.plain) return null;
+  const plain = window.creationStorage.plain;
+  if (typeof plain.getItem !== 'function' || typeof plain.setItem !== 'function') return null;
+  return plain;
+}
+
+function parseStoredState(rawValue) {
+  if (!rawValue || typeof rawValue !== 'string') return null;
+
+  // New format: plain JSON string.
   try {
-    if (window.creationStorage) {
-      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
-      await window.creationStorage.plain.setItem(STATE_KEY, encoded);
-    } else {
-      localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    return JSON.parse(rawValue);
+  } catch (_e) {}
+
+  // Legacy format: base64-encoded JSON.
+  try {
+    return JSON.parse(atob(rawValue));
+  } catch (_e) {}
+
+  // Legacy unicode-safe encoding that used escape/unescape.
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(rawValue))));
+  } catch (_e) {}
+
+  return null;
+}
+
+async function saveState() {
+  const json = JSON.stringify(state);
+  const plain = getCreationPlainStorage();
+
+  try {
+    if (plain) {
+      await plain.setItem(STATE_KEY, json);
     }
   } catch (e) {
-    console.error('Error saving state:', e);
+    console.error('Error saving state to creationStorage:', e);
+  }
+
+  try {
+    localStorage.setItem(STATE_KEY, json);
+  } catch (e) {
+    console.error('Error saving state to localStorage:', e);
   }
 }
 
 async function loadState() {
+  const candidates = [];
+  const plain = getCreationPlainStorage();
+
   try {
-    if (window.creationStorage) {
-      const stored = await window.creationStorage.plain.getItem(STATE_KEY);
-      if (stored) {
-        state = JSON.parse(decodeURIComponent(escape(atob(stored))));
-        return true;
-      }
-    } else {
-      const stored = localStorage.getItem(STATE_KEY);
-      if (stored) {
-        state = JSON.parse(stored);
-        return true;
-      }
+    if (plain) {
+      const creationStored = await plain.getItem(STATE_KEY);
+      if (creationStored) candidates.push(creationStored);
     }
   } catch (e) {
-    console.error('Error loading state:', e);
+    console.error('Error loading state from creationStorage:', e);
   }
+
+  try {
+    const localStored = localStorage.getItem(STATE_KEY);
+    if (localStored) candidates.push(localStored);
+  } catch (e) {
+    console.error('Error loading state from localStorage:', e);
+  }
+
+  for (const candidate of candidates) {
+    const parsed = parseStoredState(candidate);
+    if (!parsed || typeof parsed !== 'object') continue;
+
+    state = { ...defaultState, ...parsed };
+
+    // Keep both stores in sync using the normalized JSON format.
+    saveState();
+    return true;
+  }
+
   return false;
 }
 
@@ -557,6 +604,11 @@ function openCapture() {
 // ============================================
 // Gallery
 // ============================================
+function openGallery() {
+  updateGallery();
+  showScreen('gallery');
+}
+
 function updateGallery() {
   const grid = document.getElementById('gallery-grid');
   const empty = document.getElementById('gallery-empty');
@@ -954,6 +1006,12 @@ window.addEventListener('sideClick', () => {
   }
 });
 
+window.addEventListener('longPressStart', () => {
+  if (currentScreen === 'home') {
+    openGallery();
+  }
+});
+
 // ============================================
 // Plugin Message Handling
 // ============================================
@@ -975,10 +1033,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Navigation buttons
   document.getElementById('btn-capture').addEventListener('click', openCapture);
   document.getElementById('btn-reminder-capture').addEventListener('click', openCapture);
-  document.getElementById('btn-gallery').addEventListener('click', () => {
-    updateGallery();
-    showScreen('gallery');
-  });
+  document.getElementById('btn-gallery').addEventListener('click', openGallery);
 
   // Load saved state
   const hasState = await loadState();
