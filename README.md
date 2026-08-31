@@ -6,6 +6,16 @@ A pregnancy photo tracker built specifically for the Rabbit r1. The application 
 
 > The image above is a static interface preview derived from the current 240 × 320 application source.
 
+<!--
+Runtime screenshot gallery. Capture requirements are documented in docs/screenshots/README.md.
+Replace the static preview above with 01-home.png once the runtime set is ready, then place the remaining images beside the sections they support.
+
+![BumpSnap home](docs/screenshots/01-home.png)
+![BumpSnap capture](docs/screenshots/02-capture.png)
+![BumpSnap gallery](docs/screenshots/03-gallery.png)
+![BumpSnap slideshow](docs/screenshots/04-slideshow.png)
+-->
+
 ## What it does
 
 BumpSnap tracks pregnancy progress by week and stores a sequence of bump photos against that timeline. The current application supports setup, weekly photo capture, a gallery, photo detail views, a timed slideshow, reminders and a post-birth state.
